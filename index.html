@@ -136,6 +136,30 @@
   }
   .nav-cta:hover{ background:var(--deep-2); }
   .nav-right{ display:flex; align-items:center; gap:12px; }
+  .auth-area{ display:flex; align-items:center; gap:10px; }
+  .nav-link-btn{
+    background:none; border:none; color:var(--ink-soft); font-weight:600; font-size:0.92rem;
+  }
+  .nav-link-btn:hover{ color:var(--ink); }
+  .nav-signup-btn{
+    background:transparent; border:1px solid var(--ink); color:var(--ink);
+    padding:9px 16px; border-radius:var(--radius-s); font-weight:600; font-size:0.9rem;
+  }
+  .nav-signup-btn:hover{ background:var(--ink); color:var(--white); }
+  .user-chip{
+    display:flex; align-items:center; gap:8px;
+  }
+  .user-chip .u-avatar{
+    width:30px; height:30px; border-radius:50%; background:var(--deep); color:var(--white);
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Fraunces',serif; font-weight:600; font-size:0.85rem;
+  }
+  .user-chip .u-name{ font-weight:600; font-size:0.9rem; }
+  .user-chip .u-logout{
+    background:none; border:none; color:var(--ink-soft); font-size:0.85rem; font-weight:600;
+    text-decoration:underline;
+  }
+  .user-chip .u-logout:hover{ color:var(--ink); }
   .theme-toggle{
     display:flex; align-items:center; justify-content:center;
     width:38px; height:38px; border-radius:50%;
@@ -148,6 +172,9 @@
   @media (max-width:860px){
     nav.links{ display:none; }
     .nav-mobile-toggle{ display:block; }
+  }
+  @media (max-width:640px){
+    .nav-link-btn{ display:none; }
   }
 
   /* ---------- HERO ---------- */
@@ -567,6 +594,7 @@
   }
   .booking-form{ display:block; }
   .booking-form.hidden{ display:none; }
+  .hidden{ display:none; }
   .confirmed{
     display:none; text-align:center; padding:10px 0 4px;
   }
@@ -580,6 +608,14 @@
     background:var(--paper); border:1px dashed var(--line); border-radius:var(--radius-s);
     padding:12px; font-family:'Fraunces',serif; font-weight:600; margin:16px 0;
   }
+  .auth-tabs{ display:flex; gap:8px; margin-bottom:20px; border-bottom:1px solid var(--line); }
+  .auth-tab{
+    background:none; border:none; padding:10px 4px 12px; font-weight:600; font-size:0.95rem;
+    color:var(--ink-soft); border-bottom:2px solid transparent; margin-bottom:-1px;
+  }
+  .auth-tab.active{ color:var(--ink); border-bottom-color:var(--deep); }
+  .auth-switch{ text-align:center; font-size:0.85rem; color:var(--ink-soft); margin-top:14px; }
+  .auth-switch a{ color:var(--deep); font-weight:600; text-decoration:underline; cursor:pointer; }
   .tracking{ display:none; text-align:left; border:1px solid var(--line); border-radius:var(--radius-s); padding:14px 16px; margin-bottom:16px; }
   .tracking.active{ display:block; }
   .track-title{ font-weight:700; font-size:0.85rem; margin-bottom:10px; }
@@ -700,6 +736,7 @@
     .shine-name{ animation:none; background-position:0 0; color:var(--ink); background:none; }
   }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
@@ -715,6 +752,10 @@
       <a href="#partner">For vets</a>
     </nav>
     <div class="nav-right">
+      <div class="auth-area" id="authArea">
+        <button class="nav-link-btn" id="signInBtn" onclick="openAuthModal('signin')">Sign in</button>
+        <button class="nav-signup-btn" id="signUpBtn" onclick="openAuthModal('signup')">Sign up</button>
+      </div>
       <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" aria-label="Toggle dark mode">🌙</button>
       <button class="nav-cta" id="navCtaBtn" onclick="document.getElementById('hail').scrollIntoView({behavior:'smooth'})">Hail a vet</button>
     </div>
@@ -1199,7 +1240,67 @@
 <button class="booking-pill" id="bookingPill" onclick="expandBookingWidget()">📅 1 upcoming booking</button>
 <div class="toast" id="toast"></div>
 
+<!-- Auth Modal -->
+<div class="modal-backdrop" id="authBackdrop">
+  <div class="modal" style="max-width:400px;">
+    <button class="modal-close" onclick="closeAuthModal()" aria-label="Close">×</button>
+
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tabSignin" onclick="switchAuthTab('signin')">Sign in</button>
+      <button class="auth-tab" id="tabSignup" onclick="switchAuthTab('signup')">Sign up</button>
+    </div>
+
+    <div id="signinForm">
+      <div class="field" style="margin-bottom:14px;">
+        <label for="si-email">Email</label>
+        <input id="si-email" type="email" placeholder="you@example.com">
+      </div>
+      <div class="field" style="margin-bottom:14px;">
+        <label for="si-password">Password</label>
+        <input id="si-password" type="password" placeholder="••••••••">
+      </div>
+      <button class="modal-confirm-btn" onclick="handleSignin()">Sign in</button>
+      <div class="auth-switch">New here? <a href="#" onclick="switchAuthTab('signup'); return false;">Create an account</a></div>
+    </div>
+
+    <div id="signupForm" class="hidden">
+      <div class="field" style="margin-bottom:14px;">
+        <label for="su-name">Your name</label>
+        <input id="su-name" type="text" placeholder="e.g. Aditi Rao">
+      </div>
+      <div class="field" style="margin-bottom:14px;">
+        <label for="su-email">Email</label>
+        <input id="su-email" type="email" placeholder="you@example.com">
+      </div>
+      <div class="field" style="margin-bottom:14px;">
+        <label for="su-password">Password</label>
+        <input id="su-password" type="password" placeholder="At least 6 characters">
+      </div>
+      <button class="modal-confirm-btn" onclick="handleSignup()">Create account</button>
+      <div class="auth-switch">Already have an account? <a href="#" onclick="switchAuthTab('signin'); return false;">Sign in</a></div>
+    </div>
+  </div>
+</div>
+
 <script>
+  /* ---------- SUPABASE SETUP ---------- */
+  // Replace these two with your real values from
+  // Supabase → Project Settings → API
+  const SUPABASE_URL = "YOUR_SUPABASE_URL";
+  const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+
+  let supa = null;
+  let dbReady = false;
+  try {
+    if (SUPABASE_URL && !SUPABASE_URL.includes("YOUR_SUPABASE") &&
+        SUPABASE_ANON_KEY && !SUPABASE_ANON_KEY.includes("YOUR_SUPABASE")) {
+      supa = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      dbReady = true;
+    }
+  } catch (e) {
+    console.warn("Supabase not connected:", e);
+  }
+
   /* ---------- THEME TOGGLE ---------- */
   function updateThemeIcon(){
     const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
@@ -1219,44 +1320,282 @@
   }
   updateThemeIcon();
 
-  const vets = [
-    { name:"Dr. Uday Rathore", spec:"Small animal general practice", rating:"4.9", visits:"1.2k visits", eta:"12 min away", price:"₹499", color:"#123832", init:"UR" },
-    { name:"Dr. Vanshika Tripathi", spec:"Canine orthopedics", rating:"4.8", visits:"860 visits", eta:"20 min away", price:"₹699", color:"#C6842A", init:"VT" },
-    { name:"Dr. Vikas Lloydian", spec:"Feline medicine", rating:"5.0", visits:"640 visits", eta:"9 min away", price:"₹549", color:"#C9727A", init:"VL" },
-    { name:"Dr. Izaan Lloydian", spec:"Exotic & avian care", rating:"4.7", visits:"310 visits", eta:"27 min away", price:"₹799", color:"#4C8B5B", init:"IL" },
-    { name:"Dr. Shreya", spec:"Emergency & critical care", rating:"4.9", visits:"940 visits", eta:"6 min away", price:"₹899", color:"#123832", init:"SH" },
-    { name:"Dr. Sagar Singh", spec:"Vaccination & wellness", rating:"4.8", visits:"1.1k visits", eta:"14 min away", price:"₹399", color:"#C6842A", init:"SS" },
+  /* ---------- AUTH (sign in / sign up) ---------- */
+  // Local fallback storage, used only when Supabase isn't connected yet
+  function loadUsers(){
+    try{
+      const raw = localStorage.getItem('pettails-users');
+      return raw ? JSON.parse(raw) : [];
+    }catch(e){ return []; }
+  }
+  function saveUsers(users){
+    try{ localStorage.setItem('pettails-users', JSON.stringify(users)); }catch(e){}
+  }
+  function loadSession(){
+    try{
+      const raw = localStorage.getItem('pettails-session');
+      return raw ? JSON.parse(raw) : null;
+    }catch(e){ return null; }
+  }
+  function saveSession(user){
+    try{
+      if(user) localStorage.setItem('pettails-session', JSON.stringify(user));
+      else localStorage.removeItem('pettails-session');
+    }catch(e){}
+  }
+
+  let currentUser = loadSession();
+
+  function renderAuthArea(){
+    const area = document.getElementById('authArea');
+    if(currentUser){
+      const initial = currentUser.name.charAt(0).toUpperCase();
+      area.innerHTML = `
+        <div class="user-chip">
+          <div class="u-avatar">${initial}</div>
+          <span class="u-name">${currentUser.name}</span>
+          <button class="u-logout" onclick="logout()">Log out</button>
+        </div>
+      `;
+    } else {
+      area.innerHTML = `
+        <button class="nav-link-btn" id="signInBtn" onclick="openAuthModal('signin')">Sign in</button>
+        <button class="nav-signup-btn" id="signUpBtn" onclick="openAuthModal('signup')">Sign up</button>
+      `;
+    }
+  }
+
+  // If Supabase is connected, restore any existing real session on load
+  if(dbReady){
+    supa.auth.getSession().then(({ data }) => {
+      if(data && data.session && data.session.user){
+        const u = data.session.user;
+        currentUser = { name: (u.user_metadata && u.user_metadata.name) || u.email, email: u.email };
+        renderAuthArea();
+      }
+    });
+    supa.auth.onAuthStateChange((_event, session) => {
+      if(session && session.user){
+        const u = session.user;
+        currentUser = { name: (u.user_metadata && u.user_metadata.name) || u.email, email: u.email };
+      } else {
+        currentUser = null;
+      }
+      renderAuthArea();
+    });
+  } else {
+    renderAuthArea();
+  }
+
+  const authBackdrop = document.getElementById('authBackdrop');
+  authBackdrop.addEventListener('click', (e) => {
+    if(e.target === authBackdrop) closeAuthModal();
+  });
+
+  function openAuthModal(tab){
+    switchAuthTab(tab || 'signin');
+    authBackdrop.classList.add('open');
+  }
+  function closeAuthModal(){
+    authBackdrop.classList.remove('open');
+  }
+  function switchAuthTab(tab){
+    const isSignin = tab === 'signin';
+    document.getElementById('tabSignin').classList.toggle('active', isSignin);
+    document.getElementById('tabSignup').classList.toggle('active', !isSignin);
+    document.getElementById('signinForm').classList.toggle('hidden', !isSignin);
+    document.getElementById('signupForm').classList.toggle('hidden', isSignin);
+  }
+
+  function isValidEmail(email){
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  }
+
+  async function handleSignup(){
+    const name = document.getElementById('su-name').value.trim();
+    const email = document.getElementById('su-email').value.trim().toLowerCase();
+    const password = document.getElementById('su-password').value;
+
+    if(!name || !email || !password){
+      showToast('Fill in all fields to sign up.');
+      return;
+    }
+    if(!isValidEmail(email)){
+      showToast('Enter a valid email address.');
+      return;
+    }
+    if(password.length < 6){
+      showToast('Password must be at least 6 characters.');
+      return;
+    }
+
+    if(dbReady){
+      const { data, error } = await supa.auth.signUp({
+        email, password,
+        options: { data: { name } }
+      });
+      if(error){
+        showToast(error.message);
+        return;
+      }
+      currentUser = { name, email };
+      renderAuthArea();
+      closeAuthModal();
+      clearAuthInputs();
+      showToast(data.session ? `Welcome to PetTails, ${name}!` : `Check your email to confirm your account.`);
+      return;
+    }
+
+    // Fallback: local-only mock account (no real backend connected yet)
+    const users = loadUsers();
+    if(users.some(u => u.email === email)){
+      showToast('An account with that email already exists.');
+      return;
+    }
+    users.push({ name, email, password });
+    saveUsers(users);
+    currentUser = { name, email };
+    saveSession(currentUser);
+    renderAuthArea();
+    closeAuthModal();
+    clearAuthInputs();
+    showToast(`Welcome to PetTails, ${name}!`);
+  }
+
+  async function handleSignin(){
+    const email = document.getElementById('si-email').value.trim().toLowerCase();
+    const password = document.getElementById('si-password').value;
+
+    if(!email || !password){
+      showToast('Enter your email and password.');
+      return;
+    }
+
+    if(dbReady){
+      const { data, error } = await supa.auth.signInWithPassword({ email, password });
+      if(error){
+        showToast(error.message);
+        return;
+      }
+      const u = data.user;
+      currentUser = { name: (u.user_metadata && u.user_metadata.name) || u.email, email: u.email };
+      renderAuthArea();
+      closeAuthModal();
+      clearAuthInputs();
+      showToast(`Welcome back, ${currentUser.name}!`);
+      return;
+    }
+
+    // Fallback: local-only mock account
+    const users = loadUsers();
+    const match = users.find(u => u.email === email && u.password === password);
+    if(!match){
+      showToast('No account matches that email and password.');
+      return;
+    }
+    currentUser = { name: match.name, email: match.email };
+    saveSession(currentUser);
+    renderAuthArea();
+    closeAuthModal();
+    clearAuthInputs();
+    showToast(`Welcome back, ${match.name}!`);
+  }
+
+  function clearAuthInputs(){
+    ['su-name','su-email','su-password','si-email','si-password'].forEach(id => {
+      const el = document.getElementById(id);
+      if(el) el.value = '';
+    });
+  }
+
+  async function logout(){
+    if(dbReady){
+      await supa.auth.signOut();
+    }
+    currentUser = null;
+    saveSession(null);
+    renderAuthArea();
+    showToast('Signed out.');
+  }
+
+  const fallbackVets = [
+    { name:"Dr. Uday Rathore", spec:"Small animal general practice", rating:"4.9", visits:"1.2k visits", eta:"12 min away", price:"₹499", color:"#123832", init:"UR", online:true },
+    { name:"Dr. Vanshika Tripathi", spec:"Canine orthopedics", rating:"4.8", visits:"860 visits", eta:"20 min away", price:"₹699", color:"#C6842A", init:"VT", online:true },
+    { name:"Dr. Vikas Lloydian", spec:"Feline medicine", rating:"5.0", visits:"640 visits", eta:"9 min away", price:"₹549", color:"#C9727A", init:"VL", online:true },
+    { name:"Dr. Izaan Lloydian", spec:"Exotic & avian care", rating:"4.7", visits:"310 visits", eta:"27 min away", price:"₹799", color:"#4C8B5B", init:"IL", online:true },
+    { name:"Dr. Shreya", spec:"Emergency & critical care", rating:"4.9", visits:"940 visits", eta:"6 min away", price:"₹899", color:"#123832", init:"SH", online:true },
+    { name:"Dr. Sagar Singh", spec:"Vaccination & wellness", rating:"4.8", visits:"1.1k visits", eta:"14 min away", price:"₹399", color:"#C6842A", init:"SS", online:true },
   ];
 
+  let vets = fallbackVets;
   const grid = document.getElementById('vetGrid');
-  vets.forEach((v, i) => {
-    const card = document.createElement('div');
-    card.className = 'vet-card';
-    card.innerHTML = `
-      <div class="vet-photo" style="background:${v.color};">
-        <span class="avail"><span class="dot"></span>Online now</span>
-        ${v.init}
-      </div>
-      <div class="vet-body">
-        <div class="vet-top">
-          <div>
-            <div class="vet-name">${v.name}</div>
-            <div class="vet-spec">${v.spec}</div>
+
+  function renderVetGrid(){
+    grid.innerHTML = '';
+    vets.forEach((v, i) => {
+      const isOnline = v.online !== false;
+      const card = document.createElement('div');
+      card.className = 'vet-card';
+      card.innerHTML = `
+        <div class="vet-photo" style="background:${v.color};">
+          <span class="avail" style="${isOnline ? '' : 'opacity:0.7;'}">
+            <span class="dot" style="${isOnline ? '' : 'background:#9AA69C;'}"></span>${isOnline ? 'Online now' : 'Offline'}
+          </span>
+          ${v.init}
+        </div>
+        <div class="vet-body">
+          <div class="vet-top">
+            <div>
+              <div class="vet-name">${v.name}</div>
+              <div class="vet-spec">${v.spec}</div>
+            </div>
+            <div class="vet-rating">★ ${v.rating}</div>
           </div>
-          <div class="vet-rating">★ ${v.rating}</div>
+          <div class="vet-meta">
+            <span>${v.eta}</span>
+            ${v.visits ? `<span>${v.visits}</span>` : ''}
+          </div>
+          <div class="vet-foot">
+            <div class="vet-price">${v.price} <span>/ consult</span></div>
+            <button class="book-btn" data-idx="${i}" ${isOnline ? '' : 'disabled style="opacity:0.5;"'}>Book</button>
+          </div>
         </div>
-        <div class="vet-meta">
-          <span>${v.eta}</span>
-          <span>${v.visits}</span>
-        </div>
-        <div class="vet-foot">
-          <div class="vet-price">${v.price} <span>/ consult</span></div>
-          <button class="book-btn" data-idx="${i}">Book</button>
-        </div>
-      </div>
-    `;
-    grid.appendChild(card);
-  });
+      `;
+      grid.appendChild(card);
+    });
+  }
+  renderVetGrid();
+
+  async function loadVetsFromDB(){
+    if(!dbReady) return;
+    const { data, error } = await supa.from('vets').select('*').order('name');
+    if(error || !data || data.length === 0){
+      console.warn('Falling back to demo vets:', error && error.message);
+      return;
+    }
+    vets = data.map(row => ({
+      name: row.name,
+      spec: row.specialty,
+      rating: row.rating,
+      visits: row.visits || '',
+      eta: row.eta,
+      price: row.price,
+      color: row.color,
+      init: row.initials,
+      online: row.is_online,
+    }));
+    renderVetGrid();
+  }
+  loadVetsFromDB();
+
+  // Live-update the vet grid the moment is_online changes in Supabase
+  if(dbReady){
+    supa.channel('vets-live')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'vets' }, () => {
+        loadVetsFromDB();
+      })
+      .subscribe();
+  }
 
   const slots = ["Now", "In 30 min", "In 1 hr", "Today, 4 PM", "Today, 6 PM", "Tomorrow, 10 AM"];
   let selectedSlot = null;
@@ -1322,7 +1661,7 @@
     bookingForm.classList.add('hidden');
     matchingState.classList.add('active');
 
-    setTimeout(() => {
+    setTimeout(async () => {
       matchingState.classList.remove('active');
       confirmedState.classList.add('active');
       const petName = document.getElementById('modalPetName').value || 'your pet';
@@ -1350,6 +1689,17 @@
         ref: refCode,
       };
       renderBookingWidget();
+
+      if(dbReady){
+        const { error } = await supa.from('bookings').insert({
+          vet_name: currentVet.name,
+          pet_name: petName,
+          visit_type: visitType,
+          time_slot: selectedSlot,
+          ref_code: refCode,
+        });
+        if(error) console.warn('Booking not saved to database:', error.message);
+      }
     }, 1600);
   }
 
@@ -1401,13 +1751,19 @@
     document.getElementById('bwActions').style.display = '';
   }
 
-  function cancelBooking(){
+  async function cancelBooking(){
     if(!activeBooking) return;
+    const ref = activeBooking.ref;
     activeBooking = null;
     document.getElementById('bookingWidget').classList.remove('show');
     document.getElementById('bookingPill').classList.remove('show');
     dismissCancelBooking();
     showToast('Booking cancelled');
+
+    if(dbReady && ref){
+      const { error } = await supa.from('bookings').update({ status: 'cancelled' }).eq('ref_code', ref);
+      if(error) console.warn('Cancellation not saved to database:', error.message);
+    }
   }
 
   function showToast(msg){
@@ -1426,7 +1782,7 @@
 
   /* ---------- PET PROFILE ---------- */
   let pets = [];
-  function addPet(){
+  async function addPet(){
     const name = document.getElementById('pf-name').value.trim();
     const breed = document.getElementById('pf-breed').value.trim();
     const age = document.getElementById('pf-age').value.trim();
@@ -1438,6 +1794,11 @@
     document.getElementById('pf-breed').value = '';
     document.getElementById('pf-age').value = '';
     document.getElementById('pf-weight').value = '';
+
+    if(dbReady){
+      const { error } = await supa.from('pets').insert({ name, breed, age, weight });
+      if(error) console.warn('Pet not saved to database:', error.message);
+    }
   }
   function removePet(idx){
     pets.splice(idx, 1);
@@ -1483,7 +1844,7 @@
     });
   }
 
-  function addReview(){
+  async function addReview(){
     const name = document.getElementById('rv-name').value.trim();
     const pet = document.getElementById('rv-pet').value.trim();
     const vet = document.getElementById('rv-vet').value;
@@ -1514,6 +1875,17 @@
     document.getElementById('rv-name').value = '';
     document.getElementById('rv-pet').value = '';
     document.getElementById('rv-text').value = '';
+
+    if(dbReady){
+      const { error } = await supa.from('reviews').insert({
+        owner_name: name,
+        pet_name: pet,
+        vet_name: vet,
+        rating: Number(rating),
+        review_text: text,
+      });
+      if(error) console.warn('Review not saved to database:', error.message);
+    }
   }
 
   document.addEventListener('keydown', (e) => {
